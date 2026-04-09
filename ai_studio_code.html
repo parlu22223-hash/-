@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nozomu Ando Portfolio</title>
+    <!-- ライブラリの読み込み -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/framer-motion@11.0.3/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-display { font-family: 'Montserrat', sans-serif; }
+        .text-neon-purple { color: #bc13fe; }
+        .text-neon-lime { color: #ccff00; }
+        .bg-neon-purple { background-color: #bc13fe; }
+        .bg-neon-lime { background-color: #ccff00; }
+        .border-neon-lime { border-color: #ccff00; }
+        
+        /* テキストのアウトライン効果 */
+        .border-text-stroke {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+            color: transparent;
+        }
+        @media (min-width: 768px) {
+            .border-text-stroke {
+                -webkit-text-stroke: 2px rgba(255, 255, 255, 0.3);
+            }
+        }
+        
+        /* ガラスモーフィズム効果 */
+        .bg-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d0d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bc13fe;
+            border-radius: 10px;
+        }
+    </style>
+    
+    <script>
+        // Tailwindのカスタム設定
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#0d0d0d',
+                        'neon-purple': '#bc13fe',
+                        'neon-lime': '#ccff00',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { motion, useScroll, useTransform } = FramerMotion;
+
+        // LucideアイコンをReactで使うための簡易コンポーネント
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (iconRef.current) {
+                    lucide.createIcons({
+                        attrs: {
+                            class: className,
+                            width: size,
+                            height: size
+                        },
+                        nameAttr: 'data-lucide',
+                        icons: { [name]: lucide.icons[name] }
+                    });
+                }
+            }, [name, size, className]);
+            return <i data-lucide={name} ref={iconRef} className={className}></i>;
+        };
+
+        const WORKS = [
+            {
+                id: 1,
+                title: "YouTube Entertainment",
+                category: "Video Editing",
+                image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&q=80&w=800",
+                color: "purple",
+                description: "エンタメ系動画のカット・テロップ・演出。"
+            },
+            {
+                id: 2,
+                title: "Shorts / TikTok",
+                category: "Short Form",
+                image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=800",
+                color: "lime",
+                description: "テンポ重視の縦型動画編集。"
+            },
+            {
+                id: 3,
+                title: "Vlog / Lifestyle",
+                category: "Video Editing",
+                image: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80&w=800",
+                color: "purple",
+                description: "空気感を大切にしたシネマティックな編集。"
+            },
+            {
+                id: 4,
+                title: "Thumbnail Design",
+                category: "Design",
+                image: "https://images.unsplash.com/photo-1542744094-24638eff58bb?auto=format&fit=crop&q=80&w=800",
+                color: "lime",
+                description: "クリック率を意識したインパクトのあるサムネイル。"
+            }
+        ];
+
+        const AGAVE_IMAGE = "https://images.unsplash.com/photo-1613143323550-7a904473430d?auto=format&fit=crop&q=80&w=1000";
+
+        const SERVICES = [
+            { name: "YouTube動画編集", price: "¥15,000〜", detail: "カット、テロップ、BGM、SE込み" },
+            { name: "ショート動画制作", price: "¥5,000〜", detail: "TikTok, Reels, Shorts向け縦型動画" },
+            { name: "サムネイル制作", price: "¥3,000〜", detail: "動画の顔となるクリックされるデザイン" }
+        ];
+
+        function App() {
+            const containerRef = useRef(null);
+            const { scrollYProgress } = useScroll();
+            const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+            const scale = useTransform(scrollYProgress, [0, 0.1], [1, 0.95]);
+            const agaveY = useTransform(scrollYProgress, [0, 1], [0, -200]);
+
+            return (
+                <div className="min-h-screen bg-dark-bg text-white selection:bg-neon-purple" ref={containerRef}>
+                    {/* Hero Section */}
+                    <section className="relative h-screen flex flex-col justify-center px-6 md:px-20 overflow-hidden">
+                        <motion.div 
+                            style={{ opacity, scale }}
+                            className="z-10 max-w-6xl"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, x: -30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className="flex items-center gap-4 mb-12"
+                            >
+                                <p className="text-neon-lime font-mono tracking-[0.3em] uppercase text-sm">
+                                    Freelance Video Editor
+                                </p>
+                            </motion.div>
+
+                            <div className="flex flex-col md:flex-row md:items-end gap-8 mb-12">
+                                <motion.h1 
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                                    className="text-7xl md:text-[11rem] font-display font-black tracking-tighter leading-[0.8] order-2 md:order-1"
+                                >
+                                    NOZOMU <br />
+                                    <span className="text-neon-purple">ANDO</span>
+                                </motion.h1>
+                                
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 1, delay: 0.4 }}
+                                    className="w-48 h-48 md:w-64 md:h-64 rounded-3xl overflow-hidden border-2 border-white/10 order-1 md:order-2 md:mb-4 rotate-3 hover:rotate-0 transition-transform duration-500"
+                                >
+                                    <img src="https://r2.erweima.ai/i/yG0WvG3mR0W0f0f0f0f0f.jpg" alt="Nozomu Ando" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+                                </motion.div>
+                            </div>
+
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.8, delay: 0.6 }}
+                                className="text-xl md:text-3xl font-light text-white/60 max-w-xl leading-tight"
+                            >
+                                視聴者の心を掴む編集。<br />
+                                YouTube・ショート動画に特化した、<br />
+                                テンポとリズムの鋭い映像制作。
+                            </motion.p>
+                        </motion.div>
+
+                        {/* Agave Background Element */}
+                        <motion.div 
+                            style={{ y: agaveY }}
+                            className="absolute right-[-10%] top-[20%] w-[60%] opacity-20 pointer-events-none"
+                        >
+                            <img src={AGAVE_IMAGE} alt="Agave" className="w-full h-auto grayscale contrast-125" />
+                        </motion.div>
+
+                        {/* Scroll Indicator */}
+                        <motion.div 
+                            animate={{ y: [0, 10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30"
+                        >
+                            <span className="text-[10px] uppercase tracking-widest">Scroll</span>
+                            <Icon name="ChevronDown" size={20} />
+                        </motion.div>
+
+                        {/* Background Elements */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-neon-purple/10 rounded-full blur-[120px]" />
+                            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-neon-lime/10 rounded-full blur-[120px]" />
+                        </div>
+                    </section>
+
+                    {/* About Section */}
+                    <section className="py-32 px-6 max-w-7xl mx-auto">
+                        <div className="grid md:grid-cols-2 gap-20 items-center">
+                            <motion.div
+                                initial={{ opacity: 0, x: -50 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.8 }}
+                            >
+                                <h2 className="text-4xl font-display font-bold mb-8 flex items-center gap-4">
+                                    <span className="w-12 h-[1px] bg-neon-purple"></span>
+                                    ABOUT
+                                </h2>
+                                <p className="text-lg text-white/70 leading-relaxed mb-8">
+                                    安藤望夢（あんどう のぞむ）。フリーランスの動画編集者として活動中。<br />
+                                    YouTube動画やショート動画の編集に特化し、視聴者の目を引くテロップ演出やテンポの良いカットを得意としています。<br />
+                                    Adobe Premiere Proをメインに使用し、高品質な動画を迅速にお届けします。
+                                </p>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-neon-lime text-xs font-mono uppercase tracking-widest">Style</span>
+                                        <span className="text-xl font-semibold">Rising Talent</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-neon-purple text-xs font-mono uppercase tracking-widest">Quality</span>
+                                        <span className="text-xl font-semibold">Focus on Detail</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            <motion.div
+                                initial={{ opacity: 0, x: 50 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.8 }}
+                                className="relative"
+                            >
+                                <div className="aspect-square rounded-3xl overflow-hidden border-2 border-white/10 group">
+                                    <img src="https://r2.erweima.ai/i/yG0WvG3mR0W0f0f0f0f0f.jpg" alt="Nozomu Ando" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                                </div>
+                                {/* Decorative Agave Leaf */}
+                                <div className="absolute -bottom-10 -right-10 w-40 h-40 opacity-40 rotate-12 pointer-events-none">
+                                    <img src={AGAVE_IMAGE} alt="" className="w-full h-full object-contain grayscale" />
+                                </div>
+                            </motion.div>
+                        </div>
+                    </section>
+
+                    {/* Works Section */}
+                    <section className="py-32 px-6 bg-white/[0.02]">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="flex justify-between items-end mb-16">
+                                <motion.h2 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    className="text-5xl md:text-7xl font-display font-black"
+                                >
+                                    SELECTED <br />
+                                    <span className="text-neon-purple">WORKS</span>
+                                </motion.h2>
+                                <p className="text-white/40 font-mono text-sm hidden md:block">VIEW ALL PROJECTS [04]</p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                {WORKS.map((work) => (
+                                    <motion.div
+                                        key={work.id}
+                                        initial={{ opacity: 0, y: 30 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        whileHover={{ y: -10 }}
+                                        className="group relative aspect-[4/3] overflow-hidden rounded-3xl bg-black cursor-pointer"
+                                    >
+                                        <img 
+                                            src={work.image} 
+                                            alt={work.title}
+                                            className="w-full h-full object-cover opacity-60 group-hover:opacity-40 group-hover:scale-110 transition-all duration-700"
+                                        />
+                                        
+                                        {/* Glow Effect */}
+                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none
+                                            ${work.color === 'purple' ? 'shadow-[inset_0_0_100px_rgba(188,19,254,0.3)]' : 'shadow-[inset_0_0_100px_rgba(204,255,0,0.3)]'}`} 
+                                        />
+
+                                        <div className="absolute inset-0 p-10 flex flex-col justify-end translate-y-8 group-hover:translate-y-0 transition-transform duration-500">
+                                            <span className={`text-xs font-mono uppercase tracking-[0.2em] mb-2 
+                                                ${work.color === 'purple' ? 'text-neon-purple' : 'text-neon-lime'}`}>
+                                                {work.category}
+                                            </span>
+                                            <h3 className="text-3xl font-bold mb-4">{work.title}</h3>
+                                            <p className="text-white/0 group-hover:text-white/70 transition-colors duration-500 max-w-sm">
+                                                {work.description}
+                                            </p>
+                                            <div className="mt-6 flex items-center gap-2 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity delay-100">
+                                                View Project <Icon name="ExternalLink" size={14} />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Services Section */}
+                    <section className="py-32 px-6 max-w-5xl mx-auto relative">
+                        {/* Agave Background */}
+                        <div className="absolute left-[-20%] top-0 w-64 h-64 opacity-10 rotate-[-45deg] pointer-events-none">
+                            <img src={AGAVE_IMAGE} alt="" className="w-full h-full object-contain grayscale" />
+                        </div>
+                        
+                        <motion.h2 
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            viewport={{ once: true }}
+                            className="text-4xl font-display font-bold mb-16 text-center"
+                        >
+                            SERVICES & <span className="text-neon-lime">PRICE</span>
+                        </motion.h2>
+                        
+                        <div className="space-y-4">
+                            {SERVICES.map((service, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="group flex flex-col md:flex-row md:items-center justify-between p-8 rounded-2xl bg-glass hover:bg-white/10 transition-all border-l-4 border-transparent hover:border-neon-lime"
+                                >
+                                    <div className="mb-4 md:mb-0">
+                                        <h3 className="text-xl font-bold mb-1">{service.name}</h3>
+                                        <p className="text-white/50 text-sm">{service.detail}</p>
+                                    </div>
+                                    <div className="text-2xl font-display font-black text-neon-lime">
+                                        {service.price}
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                        <p className="mt-8 text-center text-white/40 text-sm italic">
+                            ※上記は目安です。内容や納期によって変動いたします。まずはお気軽にご相談ください。
+                        </p>
+                    </section>
+
+                    {/* Contact Section */}
+                    <section className="py-32 px-6 bg-neon-purple/5">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <motion.h2 
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                className="text-5xl md:text-7xl font-display font-black mb-12"
+                            >
+                                LET'S CREATE <br />
+                                <span className="text-neon-lime">TOGETHER</span>
+                            </motion.h2>
+                            
+                            <div className="flex flex-wrap justify-center gap-6 mb-16">
+                                <a href="#" className="flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold hover:bg-neon-lime transition-colors">
+                                    <Icon name="Mail" size={20} /> お問い合わせ
+                                </a>
+                                <div className="flex items-center gap-4">
+                                    <a href="#" className="p-4 rounded-full bg-glass hover:text-neon-purple transition-colors">
+                                        <Icon name="Instagram" size={24} />
+                                    </a>
+                                    <a href="#" className="p-4 rounded-full bg-glass hover:text-neon-lime transition-colors">
+                                        <Icon name="Twitter" size={24} />
+                                    </a>
+                                    <a href="#" className="p-4 rounded-full bg-glass hover:text-neon-purple transition-colors flex items-center gap-2 font-bold">
+                                        <span className="text-sm">LINE</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="pt-16 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 text-white/30 text-xs font-mono uppercase tracking-widest">
+                                <span>© 2024 NOZOMU ANDO</span>
+                                <span>Based in Sendai, Japan</span>
+                                <span>All Rights Reserved</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
